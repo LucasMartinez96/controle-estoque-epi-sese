@@ -1,0 +1,28 @@
+kind = "web"
+previewPath = "/"
+title = "Controle de Estoque"
+description = "Aplicação responsiva para pizzarias controlarem produtos, categorias e fornecedores com dados persistidos no banco de dados."
+version = "1.0.0"
+id = "artifacts/pizzaria-estoque"
+router = "path"
+
+[[services]]
+name = "web"
+paths = [ "/" ]
+localPort = 24260
+
+[services.development]
+run = "pnpm --filter @workspace/pizzaria-estoque run dev"
+
+[services.production]
+build = [ "pnpm", "--filter", "@workspace/pizzaria-estoque", "run", "build" ]
+serve = "static"
+publicDir = "artifacts/pizzaria-estoque/dist/public"
+
+[[services.production.rewrites]]
+from = "/*"
+to = "/index.html"
+
+[services.env]
+PORT = "24260"
+BASE_PATH = "/"

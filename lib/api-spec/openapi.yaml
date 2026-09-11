@@ -1,0 +1,866 @@
+openapi: 3.1.0
+info:
+  # Do not change the title, if the title changes, the import paths will be broken
+  title: Api
+  version: 0.1.0
+  description: API do controle de estoque para pizzarias
+servers:
+  - url: /api
+    description: Base API path
+tags:
+  - name: health
+    description: Health operations
+  - name: categories
+    description: Product categories
+  - name: suppliers
+    description: Product suppliers
+  - name: products
+    description: Inventory products
+  - name: catalog
+    description: Catalog summaries
+  - name: movements
+    description: Stock entries, exits and adjustments
+  - name: alerts
+    description: Stock alerts (below-minimum notifications)
+  - name: purchase-list
+    description: Shopping list computed live from products below minimum stock
+paths:
+  /healthz:
+    get:
+      operationId: healthCheck
+      tags: [health]
+      summary: Health check
+      description: Returns server health status
+      responses:
+        "200":
+          description: Healthy
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HealthStatus"
+  /categories:
+    get:
+      operationId: listCategories
+      tags: [categories]
+      summary: List categories
+      parameters:
+        - $ref: "#/components/parameters/ActiveOnly"
+      responses:
+        "200":
+          description: Categories
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Category"
+    post:
+      operationId: createCategory
+      tags: [categories]
+      summary: Create a category
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CategoryInput"
+      responses:
+        "201":
+          description: Created category
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Category"
+        "409":
+          description: Category already exists
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+  /categories/{id}:
+    patch:
+      operationId: updateCategory
+      tags: [categories]
+      summary: Update or deactivate a category
+      parameters:
+        - $ref: "#/components/parameters/Id"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CategoryUpdate"
+      responses:
+        "200":
+          description: Updated category
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Category"
+        "404":
+          description: Category not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "409":
+          description: Category already exists
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+  /suppliers:
+    get:
+      operationId: listSuppliers
+      tags: [suppliers]
+      summary: List suppliers
+      parameters:
+        - $ref: "#/components/parameters/ActiveOnly"
+      responses:
+        "200":
+          description: Suppliers
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Supplier"
+    post:
+      operationId: createSupplier
+      tags: [suppliers]
+      summary: Create a supplier
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SupplierInput"
+      responses:
+        "201":
+          description: Created supplier
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Supplier"
+        "409":
+          description: Supplier already exists
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+  /suppliers/{id}:
+    patch:
+      operationId: updateSupplier
+      tags: [suppliers]
+      summary: Update or deactivate a supplier
+      parameters:
+        - $ref: "#/components/parameters/Id"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SupplierUpdate"
+      responses:
+        "200":
+          description: Updated supplier
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Supplier"
+        "404":
+          description: Supplier not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "409":
+          description: Supplier already exists
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+  /products:
+    get:
+      operationId: listProducts
+      tags: [products]
+      summary: List products
+      parameters:
+        - name: search
+          in: query
+          required: false
+          schema:
+            type: string
+        - name: categoryId
+          in: query
+          required: false
+          schema:
+            type: integer
+        - $ref: "#/components/parameters/ActiveOnly"
+      responses:
+        "200":
+          description: Products
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Product"
+    post:
+      operationId: createProduct
+      tags: [products]
+      summary: Create a product
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ProductInput"
+      responses:
+        "201":
+          description: Created product
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Product"
+        "400":
+          description: Invalid product relationships or values
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "409":
+          description: Product already exists
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+  /products/{id}:
+    patch:
+      operationId: updateProduct
+      tags: [products]
+      summary: Update or deactivate a product
+      parameters:
+        - $ref: "#/components/parameters/Id"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ProductUpdate"
+      responses:
+        "200":
+          description: Updated product
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Product"
+        "400":
+          description: Invalid product relationships or values
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "404":
+          description: Product not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "409":
+          description: Product already exists
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+  /catalog/summary:
+    get:
+      operationId: getCatalogSummary
+      tags: [catalog]
+      summary: Get catalog summary
+      responses:
+        "200":
+          description: Catalog summary
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CatalogSummary"
+  /movements:
+    get:
+      operationId: listMovements
+      tags: [movements]
+      summary: List stock movements
+      parameters:
+        - name: productId
+          in: query
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+        - name: type
+          in: query
+          required: false
+          schema:
+            type: string
+            enum: [ENTRY, EXIT, ADJUSTMENT]
+        - name: recipientSearch
+          in: query
+          required: false
+          description: Busca parcial por nome do colaborador ou matrícula.
+          schema:
+            type: string
+            maxLength: 160
+        - name: limit
+          in: query
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 200
+            default: 50
+      responses:
+        "200":
+          description: Stock movements
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Movement"
+    post:
+      operationId: createMovement
+      tags: [movements]
+      summary: Create a stock movement (entrada, saída ou ajuste)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/MovementInput"
+      responses:
+        "201":
+          description: Created movement
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Movement"
+        "400":
+          description: Invalid movement (e.g. insufficient stock, inactive product)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+  /alerts:
+    get:
+      operationId: listAlerts
+      tags: [alerts]
+      summary: List stock alerts
+      parameters:
+        - name: status
+          in: query
+          required: false
+          schema:
+            $ref: "#/components/schemas/StockAlertStatus"
+        - name: productId
+          in: query
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+        - name: limit
+          in: query
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 200
+            default: 100
+      responses:
+        "200":
+          description: Stock alerts
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/StockAlert"
+  /alerts/{id}/resolve:
+    post:
+      operationId: resolveAlert
+      tags: [alerts]
+      summary: Resolve a stock alert manually
+      parameters:
+        - $ref: "#/components/parameters/Id"
+      responses:
+        "200":
+          description: Resolved alert
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/StockAlert"
+        "400":
+          description: Alert already resolved
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "404":
+          description: Alert not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+  /purchase-list:
+    get:
+      operationId: listPurchaseList
+      tags: [purchase-list]
+      summary: List purchase-list candidates (active products at/below minimum stock)
+      responses:
+        "200":
+          description: Purchase list items
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/PurchaseListItem"
+  /purchase-list/{productId}/mark-purchased:
+    post:
+      operationId: markPurchaseItemPurchased
+      tags: [purchase-list]
+      summary: Mark a purchase-list item as purchased (does not change stock)
+      parameters:
+        - $ref: "#/components/parameters/ProductId"
+      responses:
+        "200":
+          description: Updated purchase-list item
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PurchaseListItem"
+        "400":
+          description: Product is not currently eligible for the purchase list
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+  /purchase-list/{productId}/mark-pending:
+    post:
+      operationId: markPurchaseItemPending
+      tags: [purchase-list]
+      summary: Revert a purchase-list item back to pending (does not change stock)
+      parameters:
+        - $ref: "#/components/parameters/ProductId"
+      responses:
+        "200":
+          description: Updated purchase-list item
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PurchaseListItem"
+        "404":
+          description: Product is not currently on the purchase list
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+components:
+  parameters:
+    Id:
+      name: id
+      in: path
+      required: true
+      schema:
+        type: integer
+        minimum: 1
+    ProductId:
+      name: productId
+      in: path
+      required: true
+      schema:
+        type: integer
+        minimum: 1
+    ActiveOnly:
+      name: activeOnly
+      in: query
+      required: false
+      schema:
+        type: boolean
+        default: true
+  schemas:
+    HealthStatus:
+      type: object
+      properties:
+        status:
+          type: string
+      required:
+        - status
+    Error:
+      type: object
+      properties:
+        error:
+          type: string
+      required:
+        - error
+    Category:
+      type: object
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        isActive:
+          type: boolean
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+      required: [id, name, isActive, createdAt, updatedAt]
+    CategoryInput:
+      type: object
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 120
+      required: [name]
+    CategoryUpdate:
+      type: object
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 120
+        isActive:
+          type: boolean
+    Supplier:
+      type: object
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        phone:
+          type: ["string", "null"]
+        whatsapp:
+          type: ["string", "null"]
+        email:
+          type: ["string", "null"]
+          format: email
+        notes:
+          type: ["string", "null"]
+        isActive:
+          type: boolean
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+      required: [id, name, phone, whatsapp, email, notes, isActive, createdAt, updatedAt]
+    SupplierInput:
+      type: object
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 160
+        phone:
+          type: ["string", "null"]
+        whatsapp:
+          type: ["string", "null"]
+        email:
+          type: ["string", "null"]
+          format: email
+        notes:
+          type: ["string", "null"]
+      required: [name]
+    SupplierUpdate:
+      type: object
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 160
+        phone:
+          type: ["string", "null"]
+        whatsapp:
+          type: ["string", "null"]
+        email:
+          type: ["string", "null"]
+          format: email
+        notes:
+          type: ["string", "null"]
+        isActive:
+          type: boolean
+    Product:
+      type: object
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        categoryId:
+          type: integer
+        categoryName:
+          type: string
+        supplierId:
+          type: ["integer", "null"]
+        supplierName:
+          type: ["string", "null"]
+        ca: { type: string }
+        manufacturer: { type: string }
+        size: { type: ["string", "null"] }
+        unit:
+          type: string
+          enum: [UN, PAR, KG, G, L, ML, CX, PCT]
+        currentStock:
+          type: number
+        minimumStock:
+          type: number
+        maximumStock:
+          type: number
+        unitCost:
+          type: number
+        isActive:
+          type: boolean
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+      required: [id, name, categoryId, categoryName, supplierId, supplierName, ca, manufacturer, size, unit, currentStock, minimumStock, maximumStock, unitCost, isActive, createdAt, updatedAt]
+    ProductInput:
+      type: object
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 160
+        categoryId:
+          type: integer
+          minimum: 1
+        supplierId:
+          type: ["integer", "null"]
+          minimum: 1
+        ca: { type: string, minLength: 1, maxLength: 30 }
+        manufacturer: { type: string, minLength: 1, maxLength: 120 }
+        size: { type: ["string", "null"], maxLength: 40 }
+        unit:
+          type: string
+          enum: [UN, PAR, KG, G, L, ML, CX, PCT]
+        currentStock:
+          type: number
+          minimum: 0
+        minimumStock:
+          type: number
+          minimum: 0
+        maximumStock:
+          type: number
+          minimum: 0
+        unitCost:
+          type: number
+          minimum: 0
+      required: [name, categoryId, ca, manufacturer, unit, currentStock, minimumStock, maximumStock, unitCost]
+    ProductUpdate:
+      type: object
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 160
+        categoryId:
+          type: integer
+          minimum: 1
+        supplierId:
+          type: ["integer", "null"]
+          minimum: 1
+        ca: { type: string, minLength: 1, maxLength: 30 }
+        manufacturer: { type: string, minLength: 1, maxLength: 120 }
+        size: { type: ["string", "null"], maxLength: 40 }
+        unit:
+          type: string
+          enum: [UN, PAR, KG, G, L, ML, CX, PCT]
+        minimumStock:
+          type: number
+          minimum: 0
+        maximumStock:
+          type: number
+          minimum: 0
+        unitCost:
+          type: number
+          minimum: 0
+        isActive:
+          type: boolean
+    CatalogSummary:
+      type: object
+      properties:
+        totalProducts:
+          type: integer
+        activeProducts:
+          type: integer
+        activeCategories:
+          type: integer
+        activeSuppliers:
+          type: integer
+        totalStockValue:
+          type: number
+      required: [totalProducts, activeProducts, activeCategories, activeSuppliers, totalStockValue]
+    Movement:
+      type: object
+      properties:
+        id:
+          type: integer
+        productId:
+          type: integer
+        productName:
+          type: string
+        unit:
+          type: string
+        type:
+          type: string
+          enum: [ENTRY, EXIT, ADJUSTMENT]
+        quantity:
+          type: number
+        stockBefore:
+          type: number
+        stockAfter:
+          type: number
+        adjustmentDifference:
+          type: ["number", "null"]
+        occurredAt:
+          type: string
+          format: date-time
+        supplierId:
+          type: ["integer", "null"]
+        supplierName:
+          type: ["string", "null"]
+        lotCode: { type: ["string", "null"] }
+        expirationDate: { type: ["string", "null"], format: date }
+        unitCost:
+          type: ["number", "null"]
+        recipientName:
+          type: ["string", "null"]
+        recipientRegistration:
+          type: ["string", "null"]
+        reason:
+          type: ["string", "null"]
+        notes:
+          type: ["string", "null"]
+        userId:
+          type: ["integer", "null"]
+        createdAt:
+          type: string
+          format: date-time
+      required: [id, productId, productName, unit, type, quantity, stockBefore, stockAfter, adjustmentDifference, occurredAt, supplierId, supplierName, lotCode, expirationDate, unitCost, recipientName, recipientRegistration, reason, notes, userId, createdAt]
+    MovementInput:
+      type: object
+      description: >
+        quantity is required for ENTRY/EXIT (how much moved). newStock is
+        required for ADJUSTMENT (the new physical count) — the server
+        derives quantity and adjustmentDifference from it.
+      properties:
+        productId:
+          type: integer
+          minimum: 1
+        type:
+          type: string
+          enum: [ENTRY, EXIT, ADJUSTMENT]
+        quantity:
+          type: number
+          minimum: 0.001
+        newStock:
+          type: number
+          minimum: 0
+        supplierId:
+          type: ["integer", "null"]
+          minimum: 1
+        unitCost:
+          type: ["number", "null"]
+          minimum: 0
+        lotCode: { type: ["string", "null"], maxLength: 80 }
+        expirationDate: { type: ["string", "null"], format: date }
+        recipientName:
+          type: ["string", "null"]
+          maxLength: 160
+          description: Obrigatório para EXIT.
+        recipientRegistration:
+          type: ["string", "null"]
+          maxLength: 60
+          description: Obrigatório para EXIT.
+        reason:
+          type: ["string", "null"]
+          maxLength: 160
+        notes:
+          type: ["string", "null"]
+      required: [productId, type]
+    StockAlertStatus:
+      type: string
+      enum: [OPEN, RESOLVED]
+    StockAlert:
+      type: object
+      properties:
+        id:
+          type: integer
+        productId:
+          type: integer
+        productName:
+          type: string
+        unit:
+          type: string
+        status:
+          $ref: "#/components/schemas/StockAlertStatus"
+        stockAtTrigger:
+          type: number
+        minimumStockAtTrigger:
+          type: number
+        triggeredAt:
+          type: string
+          format: date-time
+        resolvedAt:
+          type: ["string", "null"]
+          format: date-time
+        resolvedByUserId:
+          type: ["integer", "null"]
+      required: [id, productId, productName, unit, status, stockAtTrigger, minimumStockAtTrigger, triggeredAt, resolvedAt, resolvedByUserId]
+    PurchaseListStatus:
+      type: string
+      enum: [PENDING, PURCHASED]
+    PurchaseListItem:
+      type: object
+      properties:
+        productId:
+          type: integer
+        productName:
+          type: string
+        categoryId:
+          type: integer
+        categoryName:
+          type: string
+        supplierId:
+          type: ["integer", "null"]
+        supplierName:
+          type: ["string", "null"]
+        unit:
+          type: string
+        currentStock:
+          type: number
+        minimumStock:
+          type: number
+        maximumStock:
+          type: number
+        unitCost:
+          type: number
+        suggestedQuantity:
+          type: number
+        estimatedCost:
+          type: number
+        status:
+          $ref: "#/components/schemas/PurchaseListStatus"
+        markedPurchasedAt:
+          type: ["string", "null"]
+          format: date-time
+      required: [productId, productName, categoryId, categoryName, supplierId, supplierName, unit, currentStock, minimumStock, maximumStock, unitCost, suggestedQuantity, estimatedCost, status, markedPurchasedAt]
